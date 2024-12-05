@@ -5,6 +5,8 @@ import { colorToCss, pointerEventToCanvasPoint } from "~/utils";
 import LayerComponent from "./LayerComponent";
 import {
   Camera,
+  CanvasMode,
+  CanvasState,
   EllipseLayer,
   Layer,
   LayerType,
@@ -15,12 +17,16 @@ import {
 import { nanoid } from "nanoid";
 import { LiveObject } from "@liveblocks/client";
 import { useEffect, useState } from "react";
+import ToolsBar from "../toolsbar/ToolsBar";
 
 const MAX_LAYERS = 100;
 
 export default function Canvas() {
   const roomColor = useStorage((root) => root.roomColor);
   const layerIds = useStorage((root) => root.layerIds);
+  const [canvasState, setState] = useState<CanvasState>({
+    mode: CanvasMode.None,
+  });
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
 
   const insertLayer = useMutation(
@@ -91,9 +97,15 @@ export default function Canvas() {
     ({}, e: React.PointerEvent) => {
       const point = pointerEventToCanvasPoint(e, camera);
 
-      insertLayer(LayerType.Rectangle, point);
+      if (canvasState.mode === CanvasMode.None) {
+        setState({ mode: CanvasMode.None });
+      } else if (canvasState.mode === CanvasMode.Inserting) {
+        insertLayer(canvasState.layerType, point);
+      } else if (canvasState.mode === CanvasMode.Dragging) {
+        setState({ mode: CanvasMode.Dragging, origin: null });
+      }
     },
-    [insertLayer, history],
+    [canvasState, setState, insertLayer],
   );
 
   return (
@@ -118,6 +130,10 @@ export default function Canvas() {
           </svg>
         </div>
       </main>
+      <ToolsBar
+        canvasState={canvasState}
+        setCanvasState={(newState) => setState(newState)}
+      />
     </div>
   );
 }
