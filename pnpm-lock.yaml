@@ -11,6 +11,12 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.7.2
         version: 2.7.4(@prisma/client@5.22.0(prisma@5.22.0))
+      '@liveblocks/client':
+        specifier: ^2.13.1
+        version: 2.13.1
+      '@liveblocks/react':
+        specifier: ^2.13.1
+        version: 2.13.1(react@18.3.1)
       '@prisma/client':
         specifier: ^5.14.0
         version: 5.22.0(prisma@5.22.0)
@@ -284,6 +290,17 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@liveblocks/client@2.13.1':
+    resolution: {integrity: sha512-lID7zLeqHWJxmrFaUGWE23ItG78ox6xAz9lSVQV7vqjJFyDisivE+toJ7OKTViRftqvO4s7HgqMNh7PMmUrFKw==}
+
+  '@liveblocks/core@2.13.1':
+    resolution: {integrity: sha512-pSb46I/Uvo5NkIR5G4Gc74mPh1xjyok5uyaIO7eFX4E/zBZWWK/XEIgufTlDS9yqlLWW78XdJL2OSI5pK5+7iw==}
+
+  '@liveblocks/react@2.13.1':
+    resolution: {integrity: sha512-UeJO6Vu5pbxOUiWKx7+OmfmDnXfqV9VJ5hmDiCHryojibM67xOnIwRpY7lvediEUtTU/U2230kXr5QfpaWmX7A==}
+    peerDependencies:
+      react: ^16.14.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
   '@next/env@15.0.3':
     resolution: {integrity: sha512-t9Xy32pjNOvVn2AS+Utt6VmyrshbpfUMhIjFO60gI58deSo/KgLOp31XZ4O+kY/Is8WAGYwA5gR7kOb1eORDBA==}
@@ -1854,6 +1871,11 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
+  use-sync-external-store@1.2.2:
+    resolution: {integrity: sha512-PElTlVMwpblvbNqQ82d2n6RjStvdSoNe9FG28kNfz3WiXilJm4DdNkEzRhCZuIDwY8U08WVihhGR5iRqAwfDiw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
@@ -2076,6 +2098,19 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@liveblocks/client@2.13.1':
+    dependencies:
+      '@liveblocks/core': 2.13.1
+
+  '@liveblocks/core@2.13.1': {}
+
+  '@liveblocks/react@2.13.1(react@18.3.1)':
+    dependencies:
+      '@liveblocks/client': 2.13.1
+      '@liveblocks/core': 2.13.1
+      react: 18.3.1
+      use-sync-external-store: 1.2.2(react@18.3.1)
 
   '@next/env@15.0.3': {}
 
@@ -3811,6 +3846,10 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-sync-external-store@1.2.2(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   util-deprecate@1.0.2: {}
 
