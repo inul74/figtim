@@ -1,3 +1,4 @@
+import Canvas from "~/components/canvas/Canvas";
 import { Room } from "~/components/liveblocks/Room";
 import { auth } from "~/server/auth";
 
@@ -9,7 +10,7 @@ export default async function Page({ params }: { params: ParamsType }) {
 
   return (
     <Room roomId={"room:" + id}>
-      <p>Hello</p>
+      <Canvas />
     </Room>
   );
 }
