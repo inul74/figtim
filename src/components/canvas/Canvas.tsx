@@ -16,7 +16,7 @@ import {
 } from "~/types";
 import { nanoid } from "nanoid";
 import { LiveObject } from "@liveblocks/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ToolsBar from "../toolsbar/ToolsBar";
 
 const MAX_LAYERS = 100;
@@ -93,6 +93,55 @@ export default function Canvas() {
     [],
   );
 
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    setCamera((camera) => ({
+      x: camera.x - e.deltaX,
+      y: camera.y - e.deltaY,
+      zoom: camera.zoom,
+    }));
+  }, []);
+
+  const onPointerDown = useMutation(
+    ({}, e: React.PointerEvent) => {
+      const point = pointerEventToCanvasPoint(e, camera);
+
+      if (canvasState.mode === CanvasMode.Dragging) {
+        setState({ mode: CanvasMode.Dragging, origin: point });
+        return;
+      }
+
+      if (canvasState.mode === CanvasMode.Inserting) return;
+
+      setState({ origin: point, mode: CanvasMode.Pressing });
+    },
+    [camera, canvasState.mode, setState],
+  );
+
+  const onPointerMove = useMutation(
+    ({}, e: React.PointerEvent) => {
+      const point = pointerEventToCanvasPoint(e, camera);
+
+      if (
+        canvasState.mode === CanvasMode.Dragging &&
+        canvasState.origin !== null
+      ) {
+        const deltaX = e.movementX;
+        const deltaY = e.movementY;
+
+        setCamera((camera) => ({
+          x: camera.x + deltaX,
+          y: camera.y + deltaY,
+          zoom: camera.zoom,
+        }));
+      }
+    },
+    [camera, canvasState],
+  );
+
+  const onPointerLeave = useMutation(({ setMyPresence }) => {
+    setMyPresence({ cursor: null });
+  }, []);
+
   const onPointerUp = useMutation(
     ({}, e: React.PointerEvent) => {
       const point = pointerEventToCanvasPoint(e, camera);
@@ -118,11 +167,19 @@ export default function Canvas() {
           className="h-full w-full touch-none"
         >
           <svg
+            onWheel={onWheel}
             onPointerUp={onPointerUp}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerLeave={onPointerLeave}
             className="h-full w-full"
             onContextMenu={(e) => e.preventDefault()}
           >
-            <g>
+            <g
+              style={{
+                transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
+              }}
+            >
               {layerIds?.map((layerId) => (
                 <LayerComponent key={layerId} id={layerId} />
               ))}
@@ -133,6 +190,14 @@ export default function Canvas() {
       <ToolsBar
         canvasState={canvasState}
         setCanvasState={(newState) => setState(newState)}
+        zoomIn={() => {
+          setCamera((camera) => ({ ...camera, zoom: camera.zoom + 0.1 }));
+        }}
+        zoomOut={() => {
+          setCamera((camera) => ({ ...camera, zoom: camera.zoom - 0.1 }));
+        }}
+        canZoomIn={camera.zoom < 2}
+        canZoomOut={camera.zoom > 0.5}
       />
     </div>
   );
