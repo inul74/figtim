@@ -10,6 +10,7 @@ import {
 } from "@liveblocks/react";
 import {
   colorToCss,
+  findIntersectionLayersWithRectangle,
   penPointsToPathPayer,
   pointerEventToCanvasPoint,
   resizeBounds,
@@ -34,6 +35,8 @@ import { useCallback, useEffect, useState } from "react";
 import ToolsBar from "../toolsbar/ToolsBar";
 import Path from "./Path";
 import SelectionBox from "./SelectionBox";
+import useDeleteLayers from "~/hooks/useDeleteLayers";
+import SelectionTools from "./SelectionTools";
 
 const MAX_LAYERS = 100;
 
@@ -41,6 +44,7 @@ export default function Canvas() {
   const roomColor = useStorage((root) => root.roomColor);
   const layerIds = useStorage((root) => root.layerIds);
   const pencilDraft = useSelf((me) => me.presence.pencilDraft);
+  const deleteLayers = useDeleteLayers();
   const [canvasState, setState] = useState<CanvasState>({
     mode: CanvasMode.None,
   });
@@ -48,6 +52,53 @@ export default function Canvas() {
   const history = useHistory();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
+
+  const selectAllLayers = useMutation(
+    ({ setMyPresence }) => {
+      if (layerIds) {
+        setMyPresence({ selection: [...layerIds] }, { addToHistory: true });
+      }
+    },
+    [layerIds],
+  );
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const activeElement = document.activeElement;
+      const isInputField =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA");
+
+      if (isInputField) return;
+
+      switch (e.key) {
+        case "Backspace":
+          deleteLayers();
+          break;
+        case "z":
+          if (e.ctrlKey || e.metaKey) {
+            if (e.shiftKey) {
+              history.redo();
+            } else {
+              history.undo();
+            }
+          }
+          break;
+        case "a":
+          if (e.ctrlKey || e.metaKey) {
+            selectAllLayers();
+            break;
+          }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [deleteLayers]);
 
   const onLayerPointerDown = useMutation(
     ({ self, setMyPresence }, e: React.PointerEvent, layerId: string) => {
@@ -150,6 +201,7 @@ export default function Canvas() {
         liveLayers.set(layerId, layer);
 
         setMyPresence({ selection: [layerId] }, { addToHistory: true });
+        setState({ mode: CanvasMode.None });
       }
     },
     [],
@@ -286,19 +338,56 @@ export default function Canvas() {
         return;
       }
 
+      if (canvasState.mode === CanvasMode.Inserting) return;
+
       if (canvasState.mode === CanvasMode.Pencil) {
         startDrawing(point, e.pressure);
         return;
       }
+
+      setState({ origin: point, mode: CanvasMode.Pressing });
     },
     [camera, canvasState.mode, startDrawing],
+  );
+
+  const startMultiSelection = useCallback((current: Point, origin: Point) => {
+    if (Math.abs(current.x - origin.x) + Math.abs(current.y - origin.y) > 5) {
+      setState({ mode: CanvasMode.SelectionNet, origin, current });
+    }
+  }, []);
+
+  const updateSelectionNet = useMutation(
+    ({ storage, setMyPresence }, current: Point, origin: Point) => {
+      if (layerIds) {
+        const layers = storage.get("layers").toImmutable();
+        setState({
+          mode: CanvasMode.SelectionNet,
+          origin,
+          current,
+        });
+
+        const ids = findIntersectionLayersWithRectangle(
+          layerIds,
+          layers,
+          origin,
+          current,
+        );
+
+        setMyPresence({ selection: ids });
+      }
+    },
+    [layerIds],
   );
 
   const onPointerMove = useMutation(
     ({}, e: React.PointerEvent) => {
       const point = pointerEventToCanvasPoint(e, camera);
 
-      if (
+      if (canvasState.mode === CanvasMode.Pressing) {
+        startMultiSelection(point, canvasState.origin);
+      } else if (canvasState.mode === CanvasMode.SelectionNet) {
+        updateSelectionNet(point, canvasState.origin);
+      } else if (
         canvasState.mode === CanvasMode.Dragging &&
         canvasState.origin !== null
       ) {
@@ -318,7 +407,15 @@ export default function Canvas() {
         resizeSelectedLayer(point);
       }
     },
-    [camera, canvasState, continueDrawing, resizeSelectedLayer],
+    [
+      camera,
+      canvasState,
+      translateSelectedLayers,
+      continueDrawing,
+      resizeSelectedLayer,
+      updateSelectionNet,
+      startMultiSelection,
+    ],
   );
 
   const onPointerLeave = useMutation(({ setMyPresence }) => {
@@ -360,6 +457,7 @@ export default function Canvas() {
           }}
           className="h-full w-full touch-none"
         >
+          <SelectionTools camera={camera} canvasMode={canvasState.mode} />
           <svg
             onWheel={onWheel}
             onPointerUp={onPointerUp}
@@ -384,6 +482,21 @@ export default function Canvas() {
               <SelectionBox
                 onResizeHandlePointerDown={onResizeHandlePointerDown}
               />
+
+              {canvasState.mode === CanvasMode.SelectionNet &&
+                canvasState.current != null && (
+                  <rect
+                    className="fill-blue-600/5 stroke-blue-600 stroke-[0.5]"
+                    x={Math.min(canvasState.origin.x, canvasState.current.x)}
+                    y={Math.min(canvasState.origin.y, canvasState.current.y)}
+                    width={Math.abs(
+                      canvasState.origin.x - canvasState.current.x,
+                    )}
+                    height={Math.abs(
+                      canvasState.origin.y - canvasState.current.y,
+                    )}
+                  />
+                )}
               {pencilDraft !== null && pencilDraft.length > 0 && (
                 <Path
                   x={0}
