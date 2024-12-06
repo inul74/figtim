@@ -4,9 +4,11 @@ import { colorToCss } from "~/utils";
 export default function Rectangle({
   id,
   layer,
+  onPointerDown,
 }: {
   id: string;
   layer: RectangleLayer;
+  onPointerDown: (e: React.PointerEvent, layerId: string) => void;
 }) {
   const { x, y, width, height, fill, stroke, opacity, cornerRadius } = layer;
 
@@ -22,6 +24,7 @@ export default function Rectangle({
         className="pointer-events-none opacity-0 group-hover:opacity-100"
       />
       <rect
+        onPointerDown={(e) => onPointerDown(e, id)}
         style={{ transform: `translate(${x}px, ${y}px)` }}
         width={width}
         height={height}

@@ -6,7 +6,20 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        sans: [
+          "var(--font-inter)",
+          "system-ui",
+          "BlinkMacSystemFont",
+          '"Segoe UI"',
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Cantarell",
+          '"Open Sans"',
+          '"Helvetica Neue"',
+          "sans-serif",
+          ...fontFamily.sans,
+        ],
       },
     },
   },

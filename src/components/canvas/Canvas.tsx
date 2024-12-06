@@ -1,10 +1,16 @@
 "use client";
 
-import { useMutation, useSelf, useStorage } from "@liveblocks/react";
+import {
+  useHistory,
+  useMutation,
+  useSelf,
+  useStorage,
+} from "@liveblocks/react";
 import {
   colorToCss,
   penPointsToPathPayer,
   pointerEventToCanvasPoint,
+  resizeBounds,
 } from "~/utils";
 import LayerComponent from "./LayerComponent";
 import {
@@ -16,13 +22,16 @@ import {
   LayerType,
   Point,
   RectangleLayer,
+  Side,
   TextLayer,
+  XYWH,
 } from "~/types";
 import { nanoid } from "nanoid";
 import { LiveObject } from "@liveblocks/client";
 import { useCallback, useEffect, useState } from "react";
 import ToolsBar from "../toolsbar/ToolsBar";
 import Path from "./Path";
+import SelectionBox from "./SelectionBox";
 
 const MAX_LAYERS = 100;
 
@@ -34,6 +43,49 @@ export default function Canvas() {
     mode: CanvasMode.None,
   });
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
+  const history = useHistory();
+
+  const onLayerPointerDown = useMutation(
+    ({ self, setMyPresence }, e: React.PointerEvent, layerId: string) => {
+      if (
+        canvasState.mode === CanvasMode.Pencil ||
+        canvasState.mode === CanvasMode.Inserting
+      ) {
+        return;
+      }
+
+      history.pause();
+      e.stopPropagation();
+      if (!self.presence.selection.includes(layerId)) {
+        setMyPresence(
+          {
+            selection: [layerId],
+          },
+          { addToHistory: true },
+        );
+      }
+
+      if (e.nativeEvent.button === 2) {
+        setState({ mode: CanvasMode.RightClick });
+      } else {
+        const point = pointerEventToCanvasPoint(e, camera);
+        setState({ mode: CanvasMode.Translating, current: point });
+      }
+    },
+    [camera, canvasState.mode, history],
+  );
+
+  const onResizeHandlePointerDown = useCallback(
+    (corner: Side, initialBounds: XYWH) => {
+      history.pause();
+      setState({
+        mode: CanvasMode.Resizing,
+        initialBounds,
+        corner,
+      });
+    },
+    [history],
+  );
 
   const insertLayer = useMutation(
     (
@@ -126,6 +178,36 @@ export default function Canvas() {
     setState({ mode: CanvasMode.Pencil });
   }, []);
 
+  const resizeSelectedLayer = useMutation(
+    ({ storage, self }, point: Point) => {
+      if (canvasState.mode !== CanvasMode.Resizing) {
+        return;
+      }
+
+      const bounds = resizeBounds(
+        canvasState.initialBounds,
+        canvasState.corner,
+        point,
+      );
+
+      const liveLayers = storage.get("layers");
+
+      if (self.presence.selection.length > 0) {
+        const layer = liveLayers.get(self.presence.selection[0]!);
+        if (layer) {
+          layer.update(bounds);
+        }
+      }
+    },
+    [canvasState],
+  );
+
+  const unselectLayers = useMutation(({ self, setMyPresence }) => {
+    if (self.presence.selection.length > 0) {
+      setMyPresence({ selection: [] }, { addToHistory: true });
+    }
+  }, []);
+
   const startDrawing = useMutation(
     ({ setMyPresence }, point: Point, pressure: number) => {
       setMyPresence({
@@ -199,9 +281,11 @@ export default function Canvas() {
         }));
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(point, e);
+      } else if (canvasState.mode === CanvasMode.Resizing) {
+        resizeSelectedLayer(point);
       }
     },
-    [camera, canvasState, continueDrawing],
+    [camera, canvasState, continueDrawing, resizeSelectedLayer],
   );
 
   const onPointerLeave = useMutation(({ setMyPresence }) => {
@@ -210,9 +294,15 @@ export default function Canvas() {
 
   const onPointerUp = useMutation(
     ({}, e: React.PointerEvent) => {
+      if (canvasState.mode === CanvasMode.RightClick) return;
+
       const point = pointerEventToCanvasPoint(e, camera);
 
-      if (canvasState.mode === CanvasMode.None) {
+      if (
+        canvasState.mode === CanvasMode.None ||
+        canvasState.mode === CanvasMode.Pressing
+      ) {
+        unselectLayers();
         setState({ mode: CanvasMode.None });
       } else if (canvasState.mode === CanvasMode.Inserting) {
         insertLayer(canvasState.layerType, point);
@@ -220,9 +310,12 @@ export default function Canvas() {
         setState({ mode: CanvasMode.Dragging, origin: null });
       } else if (canvasState.mode === CanvasMode.Pencil) {
         insertPath();
+      } else {
+        setState({ mode: CanvasMode.None });
       }
+      history.resume();
     },
-    [canvasState, setState, insertLayer],
+    [canvasState, setState, insertLayer, unselectLayers, history],
   );
 
   return (
@@ -249,8 +342,15 @@ export default function Canvas() {
               }}
             >
               {layerIds?.map((layerId) => (
-                <LayerComponent key={layerId} id={layerId} />
+                <LayerComponent
+                  key={layerId}
+                  id={layerId}
+                  onLayerPointerDown={onLayerPointerDown}
+                />
               ))}
+              <SelectionBox
+                onResizeHandlePointerDown={onResizeHandlePointerDown}
+              />
               {pencilDraft !== null && pencilDraft.length > 0 && (
                 <Path
                   x={0}

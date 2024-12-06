@@ -4,9 +4,11 @@ import { colorToCss } from "~/utils";
 export default function Ellipse({
   id,
   layer,
+  onPointerDown,
 }: {
   id: string;
   layer: EllipseLayer;
+  onPointerDown: (e: React.PointerEvent, layerId: string) => void;
 }) {
   const { x, y, width, height, fill, stroke, opacity } = layer;
 
@@ -24,6 +26,7 @@ export default function Ellipse({
         className="pointer-events-none opacity-0 group-hover:opacity-100"
       />
       <ellipse
+        onPointerDown={(e) => onPointerDown(e, id)}
         style={{ transform: `translate(${x}px, ${y}px)` }}
         fill={fill ? colorToCss(fill) : "#CCC"}
         stroke={stroke ? colorToCss(stroke) : "#CCC"}

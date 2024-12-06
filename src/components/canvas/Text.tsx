@@ -3,7 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { TextLayer } from "~/types";
 import { colorToCss } from "~/utils";
 
-export default function Text({ id, layer }: { id: string; layer: TextLayer }) {
+export default function Text({
+  id,
+  layer,
+  onPointerDown,
+}: {
+  id: string;
+  layer: TextLayer;
+  onPointerDown: (e: React.PointerEvent, layerId: string) => void;
+}) {
   const {
     x,
     y,
@@ -92,6 +100,7 @@ export default function Text({ id, layer }: { id: string; layer: TextLayer }) {
             className="pointer-events-none opacity-0 group-hover:opacity-100"
           />
           <text
+            onPointerDown={(e) => onPointerDown(e, id)}
             x={x}
             y={y + fontSize}
             fontSize={fontSize}
