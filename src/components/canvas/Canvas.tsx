@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  useCanRedo,
+  useCanUndo,
   useHistory,
   useMutation,
   useSelf,
@@ -44,6 +46,8 @@ export default function Canvas() {
   });
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
   const history = useHistory();
+  const canUndo = useCanUndo();
+  const canRedo = useCanRedo();
 
   const onLayerPointerDown = useMutation(
     ({ self, setMyPresence }, e: React.PointerEvent, layerId: string) => {
@@ -160,7 +164,7 @@ export default function Canvas() {
       pencilDraft.length < 2 ||
       liveLayers.size >= MAX_LAYERS
     ) {
-      setMyPresence({ pencilDraft: null });
+      setMyPresence({ pencilDraft: null }, { addToHistory: true });
       return;
     }
 
@@ -177,6 +181,33 @@ export default function Canvas() {
     setMyPresence({ pencilDraft: null });
     setState({ mode: CanvasMode.Pencil });
   }, []);
+
+  const translateSelectedLayers = useMutation(
+    ({ storage, self }, point: Point) => {
+      if (canvasState.mode !== CanvasMode.Translating) {
+        return;
+      }
+
+      const offset = {
+        x: point.x - canvasState.current.x,
+        y: point.y - canvasState.current.y,
+      };
+
+      const liveLayers = storage.get("layers");
+      for (const id of self.presence.selection) {
+        const layer = liveLayers.get(id);
+        if (layer) {
+          layer.update({
+            x: layer.get("x") + offset.x,
+            y: layer.get("y") + offset.y,
+          });
+        }
+      }
+
+      setState({ mode: CanvasMode.Translating, current: point });
+    },
+    [canvasState],
+  );
 
   const resizeSelectedLayer = useMutation(
     ({ storage, self }, point: Point) => {
@@ -279,6 +310,8 @@ export default function Canvas() {
           y: camera.y + deltaY,
           zoom: camera.zoom,
         }));
+      } else if (canvasState.mode === CanvasMode.Translating) {
+        translateSelectedLayers(point);
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(point, e);
       } else if (canvasState.mode === CanvasMode.Resizing) {
@@ -375,6 +408,10 @@ export default function Canvas() {
         }}
         canZoomIn={camera.zoom < 2}
         canZoomOut={camera.zoom > 0.5}
+        redo={() => history.redo()}
+        undo={() => history.undo()}
+        canRedo={canRedo}
+        canUndo={canUndo}
       />
     </div>
   );
