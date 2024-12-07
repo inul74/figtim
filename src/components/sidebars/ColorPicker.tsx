@@ -60,14 +60,14 @@ const ColorPicker = ({
   };
 
   return (
-    <div ref={pickerRef} className={`relative h-fit ${className ?? "w-28"}`}>
+    <div ref={pickerRef} className={`relative h-fit ${className ?? "w-24"}`}>
       <input
         type="text"
         value={inputValue}
         onChange={handleChange}
         onBlur={handleCommit}
         onKeyDown={handleKeyDown}
-        className={`h-fit w-full rounded-lg border border-[#f5f5f5] bg-[#f5f5f5] px-2 py-1 pl-6 text-xs hover:border-[#e8e8e8]`}
+        className={`w-full rounded-lg border border-[#f5f5f5] bg-[#f5f5f5] px-2 py-1 pl-6 text-xs hover:border-[#e8e8e8]`}
       />
       <div
         style={{ backgroundColor: inputValue }}
@@ -75,7 +75,7 @@ const ColorPicker = ({
         className="absolute left-1.5 top-[50%] h-3.5 w-3.5 -translate-y-1/2 cursor-pointer rounded"
       />
       {isPickerOpen && (
-        <div className="absolute right-0 z-10 mt-2 -translate-x-[125px]">
+        <div className="absolute right-0 z-10 mt-2 -translate-x-[100px] -translate-y-[260px]">
           <HexColorPicker color={inputValue} onChange={handleColorChange} />
         </div>
       )}

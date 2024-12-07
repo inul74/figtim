@@ -104,7 +104,7 @@ export default function Sidebars({
     <>
       {/* Left Sidebar */}
       {!leftIsMinimized ? (
-        <div className="fixed left-0 flex h-screen w-[264px] flex-col border-r border-gray-200 bg-white">
+        <div className="fixed left-0 flex h-screen w-[250px] flex-col border-r border-gray-200 bg-white">
           <div className="p-4">
             <div className="flex justify-between">
               <Link href="/dashboard">
@@ -195,7 +195,7 @@ export default function Sidebars({
       {/* Right Sidebar */}
       {!leftIsMinimized || layer ? (
         <div
-          className={`fixed ${leftIsMinimized && layer ? "bottom-0 right-0 top-0 h-screen" : ""} ${!leftIsMinimized && !layer ? "h-screen" : ""} ${!leftIsMinimized && layer ? "bottom-0 top-0 h-screen" : ""} right-0 flex w-[240px] flex-col border-l border-gray-200 bg-white`}
+          className={`fixed ${leftIsMinimized && layer ? "bottom-2 right-2 top-2 rounded-xl" : ""} ${!leftIsMinimized && !layer ? "h-screen" : ""} ${!leftIsMinimized && layer ? "bottom-0 top-0 h-screen" : ""} right-0 flex w-[240px] flex-col border-l border-gray-200 bg-white`}
         >
           <div className="flex items-center justify-between pr-2">
             <div className="max-36 flex w-full gap-2 overflow-x-scroll p-3 text-xs">
@@ -316,24 +316,25 @@ export default function Sidebars({
                 </div>
               </div>
               <div className="border-b border-gray-200" />
-              <div className="flex flex-col gap-2 p-3">
-                <span className="mb-1 text-[11px] font-medium">Fill</span>
-                <ColorPicker
-                  value={colorToCss(layer.fill)}
-                  onChange={(color) => {
-                    updateLayer({ fill: color, stroke: color });
-                  }}
-                />
-              </div>
-              <div className="border-b border-gray-200" />
-              <div className="flex flex-col gap-2 p-3">
-                <span className="mb-1 text-[11px] font-medium">Stroke</span>
-                <ColorPicker
-                  value={colorToCss(layer.stroke)}
-                  onChange={(color) => {
-                    updateLayer({ stroke: color });
-                  }}
-                />
+              <div className="flex w-full">
+                <div className="-mt-2 p-3">
+                  <span className="mb-1 text-[11px] font-medium">Fill</span>
+                  <ColorPicker
+                    value={colorToCss(layer.fill)}
+                    onChange={(color) => {
+                      updateLayer({ fill: color, stroke: color });
+                    }}
+                  />
+                </div>
+                <div className="mt-1">
+                  <span className="mb-1 text-[11px] font-medium">Stroke</span>
+                  <ColorPicker
+                    value={colorToCss(layer.stroke)}
+                    onChange={(color) => {
+                      updateLayer({ stroke: color });
+                    }}
+                  />
+                </div>
               </div>
               {layer.type === LayerType.Text && (
                 <>
