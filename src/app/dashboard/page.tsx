@@ -1,9 +1,10 @@
 "use server";
 
-import CreateRoom from "~/components/dashboard/CreateRoom";
-import UserMenu from "~/components/dashboard/UserMenu";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
+import UserMenu from "~/components/dashboard/UserMenu";
+import CreateRoom from "~/components/dashboard/CreateRoom";
+import RoomsView from "~/components/dashboard/RoomsView";
 
 export default async function Page() {
   const session = await auth();
@@ -35,6 +36,10 @@ export default async function Page() {
         </div>
         <div className="flex h-full flex-col gap-10 p-8">
           <CreateRoom />
+          <RoomsView
+            ownedRooms={user.ownedRooms}
+            roomInvites={user.roomInvites.map((x) => x.room)}
+          />
         </div>
       </div>
     </div>
